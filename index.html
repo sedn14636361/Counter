@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ステータス管理ツール</title>
+  <style>
+    :root {
+      --primary-color: #4a90e2;
+      --bg-color: #f7f9fc;
+      --card-bg: #ffffff;
+      --text-color: #333333;
+      --border-color: #e1e4e8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      padding: 12px;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      border: 1px solid var(--border-color);
+    }
+
+    .section-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .section-card {
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px 12px 10px;
+      background: #fafafa;
+    }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-color);
+      margin-bottom: 10px;
+    }
+
+    .section-body {
+      display: block;
+    }
+
+    .status-accordion-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .status-accordion {
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      overflow: hidden;
+      background: #ffffff;
+    }
+
+    .status-accordion-header {
+      width: 100%;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: none;
+      background: transparent;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-color);
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .status-accordion-body {
+      display: none;
+      padding: 0 12px 12px;
+    }
+
+    .status-accordion.open .status-accordion-body {
+      display: block;
+    }
+
+    .status-accordion-icon {
+      font-size: 1rem;
+      color: var(--primary-color);
+      transition: transform 0.2s ease;
+    }
+
+    .status-accordion.open .status-accordion-icon {
+      transform: rotate(180deg);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+      color: #555;
+    }
+
+    .character-display {
+      display: inline-block;
+      width: 100%;
+      font-size: clamp(1.15rem, 2vw, 1.45rem);
+      font-weight: 800;
+      line-height: 1.3;
+      color: var(--text-color);
+      padding: 0;
+      border: none;
+      background: transparent;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .character-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.45);
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transition: opacity 0.4s ease, visibility 0.4s ease;
+    }
+
+    .character-modal.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .character-modal-card {
+      width: 100%;
+      max-width: 360px;
+      border-radius: 14px;
+      background: #fff;
+      padding: 18px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    .character-modal-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--text-color);
+    }
+
+    .character-modal-description {
+      font-size: 0.95rem;
+      color: #666;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+
+    .character-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 14px;
+    }
+
+    .character-modal-button {
+      border: none;
+      border-radius: 8px;
+      background: var(--primary-color);
+      color: white;
+      padding: 10px 14px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    body.modal-open {
+      overflow: hidden;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px; 
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background-color: #fafafa;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .stepper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .hp-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .hp-column {
+      flex: 1;
+    }
+
+    .sub-label {
+      font-size: 0.9rem;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .item-input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .item-input-row input {
+      flex: 1;
+    }
+
+    .item-input-row button {
+      padding: 0 14px;
+      border: none;
+      border-radius: 8px;
+      background-color: var(--primary-color);
+      color: white;
+      cursor: pointer;
+      font-size: 0.95rem;
+      min-height: 46px;
+    }
+
+    .item-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .item-note {
+      width: 100%;
+      padding: 12px 12px 10px;
+      border-radius: 10px;
+      background: #ffffff;
+      color: #333333;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+      font-size: 0.95rem;
+      line-height: 1.4;
+      word-break: break-word;
+      border: 1px solid var(--border-color);
+    }
+
+    .item-note-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .item-note-title {
+      font-weight: 700;
+      flex: 1;
+    }
+
+    .item-note button {
+      border: none;
+      background: none;
+      color: #b33a3a;
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+      padding: 0;
+    }
+
+    .item-note-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .item-note-fields input,
+    .item-note-fields textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      background: #fafafa;
+    }
+
+    .item-note-fields textarea {
+      min-height: 56px;
+      resize: vertical;
+    }
+
+    .quantity-stepper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .quantity-stepper button {
+      width: 34px;
+      height: 34px;
+      border: none;
+      border-radius: 8px;
+      background-color: var(--primary-color);
+      color: white;
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    .quantity-stepper input {
+      flex: 1;
+      text-align: center;
+      pointer-events: none;
+      background: #fff;
+    }
+
+    .stepper button {
+      width: 44px;
+      height: 44px;
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #fff;
+      background-color: var(--primary-color);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
+    }
+
+    .stepper button:active {
+      background-color: #357abd;
+      transform: scale(0.95);
+    }
+
+    .stepper input[type="number"] {
+      flex: 1;
+      text-align: center;
+      font-size: 1.1rem;
+      font-weight: bold;
+      min-width: 0;
+      color: var(--text-color);
+      background-color: #fff;
+    }
+
+    .stepper input[readonly] {
+      color: #666;
+      background-color: #f7f7f7;
+    }
+
+    .reset-row {
+      margin-top: 14px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .reset-button {
+      width: 100%;
+      border: none;
+      border-radius: 10px;
+      background-color: #d9534f;
+      color: white;
+      padding: 12px 14px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    hr {
+      border: 0;
+      height: 1px;
+      background: var(--border-color);
+      margin: 12px 0;
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 8px;
+      }
+
+      .card {
+        padding: 12px;
+      }
+
+      .section-card {
+        padding: 10px;
+      }
+
+      .hp-row {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .item-input-row {
+        flex-direction: column;
+      }
+
+      .item-input-row button {
+        width: 100%;
+      }
+
+      .status-accordion-header {
+        padding: 12px;
+      }
+
+      .stepper button {
+        width: 42px;
+        height: 42px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="character-modal" class="character-modal hidden">
+    <div class="character-modal-card">
+      <div class="character-modal-title">キャラクター名を選択してください</div>
+      <div class="character-modal-description">誤ったキャラクターを選んでしまった場合は、次の画面で「リセット」ボタンを押してください。</div>
+      <select id="char-name-modal" style="width: 100%;">
+        <option value="">選択してください</option>
+      </select>
+      <div class="character-modal-actions">
+        <button type="button" id="character-modal-confirm" class="character-modal-button">決定</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div class="section-group">
+        <div class="section-card">
+          <div class="section-title">基本情報</div>
+          <div class="section-body">
+            <div class="form-group">
+              <label for="char-name">キャラクター名</label>
+              <div id="char-name-display" class="character-display">未選択</div>
+              <select id="char-name" style="display: none;">
+                <option value="">選択してください</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-title">ステータス</div>
+          <div class="section-body">
+            <div class="status-accordion-group">
+              <div class="status-accordion open" data-target="hp">
+                <button class="status-accordion-header" type="button" data-target="hp">
+                  <span>体力</span>
+                  <span class="status-accordion-icon">⌄</span>
+                </button>
+                <div class="status-accordion-body" id="hp">
+                  <div class="form-group">
+                    <div class="hp-row">
+                      <div class="hp-column">
+                        <div class="sub-label">現在の体力</div>
+                        <div class="stepper">
+                          <button onclick="changeValue('hp-current', -1)">-</button>
+                          <input type="number" id="hp-current" value="5">
+                          <button onclick="changeValue('hp-current', 1)">+</button>
+                        </div>
+                      </div>
+
+                      <div class="hp-column">
+                        <div class="sub-label">最大体力</div>
+                        <div class="stepper">
+                          <button onclick="changeValue('hp-max', -1)">-</button>
+                          <input type="number" id="hp-max" value="5">
+                          <button onclick="changeValue('hp-max', 1)">+</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="status-accordion open" data-target="dice">
+                <button class="status-accordion-header" type="button" data-target="dice">
+                  <span>戦闘ダイスの個数</span>
+                  <span class="status-accordion-icon">⌄</span>
+                </button>
+                <div class="status-accordion-body" id="dice">
+                  <div class="form-group">
+                    <div class="stepper">
+                      <button onclick="changeValue('dice', -1)">-</button>
+                      <input type="number" id="dice" value="3">
+                      <button onclick="changeValue('dice', 1)">+</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="status-accordion open" data-target="vote">
+                <button class="status-accordion-header" type="button" data-target="vote">
+                  <span>投票権の枚数</span>
+                  <span class="status-accordion-icon">⌄</span>
+                </button>
+                <div class="status-accordion-body" id="vote">
+                  <div class="form-group">
+                    <div class="stepper">
+                      <button onclick="changeValue('vote', -1)">-</button>
+                      <input type="number" id="vote" value="1">
+                      <button onclick="changeValue('vote', 1)">+</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="status-accordion open" data-target="money">
+                <button class="status-accordion-header" type="button" data-target="money">
+                  <span>王国紙幣</span>
+                  <span class="status-accordion-icon">⌄</span>
+                </button>
+                <div class="status-accordion-body" id="money">
+                  <div class="form-group">
+                    <div class="stepper">
+                      <button onclick="changeValue('money', -100)">-</button>
+                      <input type="number" id="money" value="500" step="100">
+                      <button onclick="changeValue('money', 100)">+</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-title">アイテム</div>
+          <div class="section-body">
+            <div class="form-group">
+              <div class="item-input-row">
+                <input type="text" id="item-input" placeholder="アイテム名を入力してください">
+                <button type="button" id="add-item-button">追加</button>
+              </div>
+              <div id="item-list" class="item-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="reset-row">
+        <button type="button" id="reset-button" class="reset-button">リセット</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const Players = [
+      'HO1 国王 ユリウス・フラウニア', 'HO2 第一王妃 セレティ・フラウニア', 'HO3 第二王妃 セレティ・フラウニア', 'HO4 第一王子 イズガル・フラウニア',
+      'HO5 第二王子 ケティ・フラウニア', 'HO6 第三王子 リニス・フラウニア', 'HO7 第一王女 クレシャ・フラウニア', 'HO8 第二王女 セフィーレ・フラウニア',
+      'HO9 孤高の騎士 リチャード', 'HO10 不死の騎士 セルム', 'HO11 戦旗の騎士 エリン', 'HO12 見習い預言者 レシア',
+      'HO13 霊媒師 ウガラガ', 'HO14 預言者の母 ミレリ', 'HO15 衛兵隊長 ドレンディア', 'HO16 王子の近衛兵 スフィム',
+      'HO17 宝石商 カクタス', 'HO18 武器商人 ダンヴァル', 'HO19 古物商 ルヴィン', 'HO20 流浪の旅人 ルファ',
+      'HO21 パン屋 コルテス', 'HO22 新聞配達人 セナ', 'HO23 長老 ロウリム', 'HO24 湖の魔女'
+    ];
+
+    const targetIds = ['char-name', 'hp-current', 'hp-max', 'dice', 'vote', 'money'];
+    const defaultStatusValues = {
+      'hp-current': '5',
+      'hp-max': '5',
+      dice: '3',
+      vote: '1',
+      money: '500'
+    };
+    const itemStorageKey = 'items';
+    let items = [];
+
+    function populatePlayerOptions() {
+      const selects = [document.getElementById('char-name'), document.getElementById('char-name-modal')].filter(Boolean);
+      selects.forEach(select => {
+        select.innerHTML = '<option value="">選択してください</option>';
+        Players.forEach(player => {
+          const option = document.createElement('option');
+          option.value = player;
+          option.textContent = player;
+          select.appendChild(option);
+        });
+      });
+    }
+
+    function updateCharacterDisplay() {
+      const select = document.getElementById('char-name');
+      const display = document.getElementById('char-name-display');
+      if (!select || !display) {
+        return;
+      }
+
+      display.textContent = select.value || '未選択';
+    }
+
+    function loadItems() {
+      const savedItems = localStorage.getItem(itemStorageKey);
+      if (!savedItems) {
+        items = [];
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(savedItems);
+        items = Array.isArray(parsed)
+          ? parsed.filter(item => item && typeof item === 'object').map(item => ({
+              name: item.name || '',
+              quantity: item.quantity || '1',
+              memo: item.memo || ''
+            })).filter(item => item.name.trim())
+          : [];
+      } catch (error) {
+        items = [];
+      }
+    }
+
+    function saveItems() {
+      localStorage.setItem(itemStorageKey, JSON.stringify(items));
+      renderItems();
+    }
+
+    function updateItem(index, field, value) {
+      items[index][field] = value;
+      localStorage.setItem(itemStorageKey, JSON.stringify(items));
+    }
+
+    function renderItems() {
+      const itemList = document.getElementById('item-list');
+      itemList.innerHTML = '';
+
+      items.forEach((item, index) => {
+        const note = document.createElement('div');
+        note.className = 'item-note';
+
+        const header = document.createElement('div');
+        header.className = 'item-note-header';
+
+        const title = document.createElement('div');
+        title.className = 'item-note-title';
+        title.textContent = item.name || 'アイテム';
+        header.appendChild(title);
+
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.textContent = '×';
+        removeButton.setAttribute('aria-label', `${item.name || 'アイテム'}を削除`);
+        removeButton.onclick = () => {
+          items.splice(index, 1);
+          saveItems();
+        };
+
+        header.appendChild(removeButton);
+        note.appendChild(header);
+
+        const fields = document.createElement('div');
+        fields.className = 'item-note-fields';
+
+        const quantityRow = document.createElement('div');
+        quantityRow.className = 'quantity-stepper';
+
+        const minusButton = document.createElement('button');
+        minusButton.type = 'button';
+        minusButton.textContent = '−';
+        minusButton.onclick = () => {
+          const nextValue = Math.max(0, parseInt(item.quantity || '0', 10) - 1);
+          updateItem(index, 'quantity', String(nextValue));
+          renderItems();
+        };
+        quantityRow.appendChild(minusButton);
+
+        const quantityInput = document.createElement('input');
+        quantityInput.type = 'text';
+        quantityInput.value = item.quantity || '1';
+        quantityInput.readOnly = true;
+        quantityRow.appendChild(quantityInput);
+
+        const plusButton = document.createElement('button');
+        plusButton.type = 'button';
+        plusButton.textContent = '+';
+        plusButton.onclick = () => {
+          const nextValue = parseInt(item.quantity || '0', 10) + 1;
+          updateItem(index, 'quantity', String(nextValue));
+          renderItems();
+        };
+        quantityRow.appendChild(plusButton);
+
+        fields.appendChild(quantityRow);
+
+        const memoInput = document.createElement('textarea');
+        memoInput.value = item.memo || '';
+        memoInput.placeholder = 'メモを入力';
+        memoInput.addEventListener('input', () => {
+          updateItem(index, 'memo', memoInput.value);
+        });
+        fields.appendChild(memoInput);
+
+        note.appendChild(fields);
+        itemList.appendChild(note);
+      });
+    }
+
+    function addItemFromInput() {
+      const input = document.getElementById('item-input');
+      const value = input.value.trim();
+      if (!value) {
+        return;
+      }
+
+      const alreadyExists = items.some(item => item.name === value);
+      if (!alreadyExists) {
+        items.push({ name: value, quantity: '1', memo: '' });
+        saveItems();
+      }
+
+      input.value = '';
+      input.focus();
+    }
+
+    function toggleStatusAccordion(targetId) {
+      document.querySelectorAll('.status-accordion').forEach(item => {
+        if (item.dataset.target === targetId) {
+          item.classList.toggle('open');
+        }
+      });
+    }
+
+    function setStatusInputsReadOnly() {
+      ['hp-current', 'hp-max', 'dice', 'vote', 'money'].forEach(id => {
+        const element = document.getElementById(id);
+        if (!element) {
+          return;
+        }
+
+        element.readOnly = true;
+        element.setAttribute('inputmode', 'numeric');
+        element.addEventListener('keydown', event => {
+          if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Backspace', 'Delete', 'Enter'].includes(event.key)) {
+            event.preventDefault();
+          }
+        });
+        element.addEventListener('wheel', event => event.preventDefault(), { passive: false });
+        element.addEventListener('paste', event => event.preventDefault());
+        element.addEventListener('drop', event => event.preventDefault());
+      });
+    }
+
+    function showCharacterSelectionModal() {
+      const modal = document.getElementById('character-modal');
+      const modalSelect = document.getElementById('char-name-modal');
+      const mainSelect = document.getElementById('char-name');
+      if (!modal || !modalSelect || !mainSelect) {
+        return;
+      }
+
+      modalSelect.value = mainSelect.value || '';
+      modal.classList.remove('hidden');
+      document.body.classList.add('modal-open');
+      modalSelect.focus();
+    }
+
+    function hideCharacterSelectionModal() {
+      const modal = document.getElementById('character-modal');
+      if (!modal) {
+        return;
+      }
+
+      modal.classList.add('hidden');
+      document.body.classList.remove('modal-open');
+    }
+
+    function applyCharacterSelection() {
+      const modalSelect = document.getElementById('char-name-modal');
+      const mainSelect = document.getElementById('char-name');
+      if (!modalSelect || !mainSelect) {
+        return;
+      }
+
+      if (!modalSelect.value) {
+        return;
+      }
+
+      mainSelect.value = modalSelect.value;
+      saveData();
+      lockCharacterSelection();
+      hideCharacterSelectionModal();
+    }
+
+    function lockCharacterSelection() {
+      const select = document.getElementById('char-name');
+      const modalSelect = document.getElementById('char-name-modal');
+      const display = document.getElementById('char-name-display');
+      if (!select || !display) {
+        return;
+      }
+
+      const hasSelection = Boolean(select.value);
+      select.disabled = hasSelection;
+      if (modalSelect) {
+        modalSelect.disabled = hasSelection;
+        modalSelect.value = select.value || '';
+      }
+      updateCharacterDisplay();
+      display.style.opacity = hasSelection ? '1' : '0.7';
+    }
+
+    function resetAll() {
+      targetIds.forEach(id => localStorage.removeItem(id));
+      localStorage.removeItem(itemStorageKey);
+
+      const select = document.getElementById('char-name');
+      const modalSelect = document.getElementById('char-name-modal');
+      if (select) {
+        select.value = '';
+        select.disabled = false;
+      }
+      if (modalSelect) {
+        modalSelect.value = '';
+        modalSelect.disabled = false;
+      }
+
+      Object.entries(defaultStatusValues).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.value = value;
+        }
+      });
+
+      items = [];
+      renderItems();
+      saveData();
+      lockCharacterSelection();
+      document.querySelectorAll('.status-accordion').forEach(item => item.classList.add('open'));
+      showCharacterSelectionModal();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      populatePlayerOptions();
+      loadItems();
+      renderItems();
+      document.querySelectorAll('.status-accordion').forEach(item => item.classList.add('open'));
+
+      targetIds.forEach(id => {
+        const savedValue = localStorage.getItem(id);
+        if (savedValue !== null) {
+          const element = document.getElementById(id);
+          if (element) {
+            element.value = savedValue;
+          }
+        }
+      });
+
+      targetIds.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.addEventListener('input', saveData);
+          element.addEventListener('change', saveData);
+        }
+      });
+
+      setStatusInputsReadOnly();
+      lockCharacterSelection();
+
+      const charNameSelect = document.getElementById('char-name');
+      const modalSelect = document.getElementById('char-name-modal');
+      const modalConfirmButton = document.getElementById('character-modal-confirm');
+      if (charNameSelect) {
+        charNameSelect.addEventListener('change', () => {
+          saveData();
+          lockCharacterSelection();
+        });
+      }
+      if (modalConfirmButton) {
+        modalConfirmButton.addEventListener('click', applyCharacterSelection);
+      }
+
+      updateCharacterDisplay();
+      if (!document.getElementById('char-name').value) {
+        showCharacterSelectionModal();
+      }
+
+      document.querySelectorAll('.status-accordion-header').forEach(button => {
+        button.addEventListener('click', () => toggleStatusAccordion(button.dataset.target));
+      });
+
+      const itemInput = document.getElementById('item-input');
+      const addItemButton = document.getElementById('add-item-button');
+      const resetButton = document.getElementById('reset-button');
+      addItemButton.addEventListener('click', addItemFromInput);
+      resetButton.addEventListener('click', () => {
+        if (confirm('本当にリセットしますか？すべてのデータが削除されます。')) {
+          resetAll();
+        }
+      });
+      itemInput.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+        }
+      });
+    });
+
+    function saveData() {
+      targetIds.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+          localStorage.setItem(id, element.value);
+        }
+      });
+    }
+
+    function changeValue(elementId, amount) {
+      const inputElement = document.getElementById(elementId);
+      let currentValue = parseInt(inputElement.value) || 0;
+      inputElement.value = currentValue + amount;
+      saveData();
+    }
+  </script>
+
+</body>
+</html>
