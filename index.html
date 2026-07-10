@@ -496,7 +496,7 @@
                   <span>体力</span>
                   <span class="status-accordion-icon">⌄</span>
                 </button>
-                <div class="status-accordion-body" id="hp">
+                <div class="status-accordion-body" id="hp-body">
                   <div class="form-group">
                     <div class="hp-row">
                       <div class="hp-column">
@@ -526,7 +526,7 @@
                   <span>戦闘ダイスの個数</span>
                   <span class="status-accordion-icon">⌄</span>
                 </button>
-                <div class="status-accordion-body" id="dice">
+                <div class="status-accordion-body" id="dice-body">
                   <div class="form-group">
                     <div class="stepper">
                       <button onclick="changeValue('dice', -1)">-</button>
@@ -542,7 +542,7 @@
                   <span>投票権の枚数</span>
                   <span class="status-accordion-icon">⌄</span>
                 </button>
-                <div class="status-accordion-body" id="vote">
+                <div class="status-accordion-body" id="vote-body">
                   <div class="form-group">
                     <div class="stepper">
                       <button onclick="changeValue('vote', -1)">-</button>
@@ -558,7 +558,7 @@
                   <span>王国紙幣</span>
                   <span class="status-accordion-icon">⌄</span>
                 </button>
-                <div class="status-accordion-body" id="money">
+                <div class="status-accordion-body" id="money-body">
                   <div class="form-group">
                     <div class="stepper">
                       <button onclick="changeValue('money', -100)">-</button>
@@ -892,26 +892,12 @@
         }
       });
 
-      targetIds.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-          element.addEventListener('input', saveData);
-          element.addEventListener('change', saveData);
-        }
-      });
-
       setStatusInputsReadOnly();
       lockCharacterSelection();
 
       const charNameSelect = document.getElementById('char-name');
       const modalSelect = document.getElementById('char-name-modal');
       const modalConfirmButton = document.getElementById('character-modal-confirm');
-      if (charNameSelect) {
-        charNameSelect.addEventListener('change', () => {
-          saveData();
-          lockCharacterSelection();
-        });
-      }
       if (modalConfirmButton) {
         modalConfirmButton.addEventListener('click', applyCharacterSelection);
       }
@@ -937,6 +923,7 @@
       itemInput.addEventListener('keydown', event => {
         if (event.key === 'Enter') {
           event.preventDefault();
+          addItemFromInput();
         }
       });
     });
